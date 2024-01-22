@@ -5,15 +5,26 @@ namespace App\Http\Controllers;
 use App\Models\CatImage;
 use App\Http\Requests\StoreCatImageRequest;
 use App\Http\Requests\UpdateCatImageRequest;
+use Illuminate\Http\Request;
 
 class CatImageController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        //
+        $tag = $request->input('tags');
+        $offset = $request->input('offset') ?? 0;
+        $limit = $request->input('limit') ?? 10;
+
+        $cats = CatImage::select('_id', 'tags')
+            ->where('tags', 'like', '%' . $tag . '%')
+            ->offset($offset)
+            ->take($limit)
+            ->get();
+
+        return $cats;
     }
 
     /**
