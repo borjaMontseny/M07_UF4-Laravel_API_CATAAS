@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\Response;
 use App\Models\CatImage;
 use App\Http\Requests\StoreCatImageRequest;
 use App\Http\Requests\UpdateCatImageRequest;
@@ -40,7 +41,16 @@ class CatImageController extends Controller
      */
     public function store(StoreCatImageRequest $request)
     {
-        //
+        $cat =
+            CatImage::create($request->all());
+        CatImage::create($request->validated());
+        CatImage::create([
+            '_id' => $request->input('_id'),
+            'mimetype' => $request->input('mimetype'),
+            'size' => $request->input('size'),
+            'tags' => json_encode($request->input('tags'))
+        ]);
+        return response()->json($cat);
     }
 
     /**
@@ -48,7 +58,7 @@ class CatImageController extends Controller
      */
     public function show(CatImage $catImage)
     {
-        //
+        return $catImage;
     }
 
     /**
@@ -64,14 +74,47 @@ class CatImageController extends Controller
      */
     public function update(UpdateCatImageRequest $request, CatImage $catImage)
     {
-        //
-    }
+        $catImage->update([
+            '_id' => $request->input('_id'),
+            'mimetype' => $request->input('mimetype'),
+            'size' => $request->input('size'),
+            'tags' => $request->input('tags'),
+        ]);
 
+        return response()->json($catImage);
+    }
     /**
      * Remove the specified resource from storage.
      */
     public function destroy(CatImage $catImage)
     {
-        //
+        if ($catImage) {
+            $catImage->delete();
+            return response()->json(['success' => true]);
+        }
+
+        return response()->json(['error' => '404 Not Found'], Response::HTTP_NOT_FOUND);
+    }
+
+    public function gatitos(Request $request)
+    {
+        $tag = $request->input('tags');
+        $offset = $request->input('offset') ?? 0;
+        $limit = $request->input('limit') ?? 10;
+
+        // Intenta obtener los datos de la API local
+        $cats = file_get_contents('http://localhost:8000/api/cats');
+
+        // Verifica si la solicitud fue exitosa
+        if ($cats === FALSE) {
+            // Maneja el error, por ejemplo, redireccionando con un mensaje de error
+            return redirect()->back()->with('error', 'Error al obtener datos de gatitos');
+        }
+
+        // Decodifica los datos obtenidos
+        $cats = json_decode($cats, true);
+
+        // Retorna la vista con los datos
+        return view('cats.index', ['cats' => $cats]);
     }
 }
